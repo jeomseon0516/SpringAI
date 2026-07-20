@@ -1,19 +1,23 @@
-package org.example.ch01;
+package org.example.ch02;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.chat.messages.AssistantMessage;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
+
+import java.util.Objects;
 
 @RestController
 @RequiredArgsConstructor
+@Log4j2
 public class AiController {
 
     private final ChatModel chatModel;
@@ -21,9 +25,9 @@ public class AiController {
     @PostMapping(
         value ="/ai/chat",
         consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, // 클라이언트가 보내는 데이터타입, 기본 폼 전송, 일반적으로 생략
-        produces = MediaType.TEXT_PLAIN_VALUE                   // 서버가 응답하는 데이터타입, 일반 텍스트, 일반적으로 생략
+        produces = MediaType.APPLICATION_NDJSON_VALUE           // NDJSON(Newline Delimited JSON), JSON 객체를 행단위로 전송하는 형식                   // 서버가 응답하는 데이터타입, 일반 텍스트, 일반적으로 생략
     )
-    public String chat(String question) {
+    public Flux<String> chat(@RequestParam("question") String question) {
 
         // 시스템 메시지 작성
         SystemMessage systemMessage = SystemMessage.builder()
@@ -49,11 +53,13 @@ public class AiController {
             .build();
 
         // LLM 요청 및 응답
-        ChatResponse chatResponse = chatModel.call(prompt);
-        AssistantMessage assistantMessage = chatResponse.getResult().getOutput();
-
-        String answer = assistantMessage.getText();
-
-        return answer;
+        return chatModel
+            .stream(prompt)
+            .map(chatResponse
+                -> Objects.requireNonNull(
+                    Objects.requireNonNull(chatResponse
+                        .getResult())
+                .getOutput()
+                .getText()));
     }
 }
