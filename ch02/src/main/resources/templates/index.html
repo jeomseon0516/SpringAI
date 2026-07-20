@@ -48,9 +48,9 @@
             // 실시간 스트림 처리 자바스크립트 객체
             const reader = response.body.getReader();
             
-            console.log(reader.read());
-            
             // byte 데이터를 문자열 변환 객체
+			const paragraph = document.createElement('p');
+            chatPanel.appendChild(paragraph);
 			const decoder = new TextDecoder();
             // 실시간 답변 출력
 			while (true) {
@@ -61,7 +61,7 @@
                 }
                 
                 const chunk = decoder.decode(value, { stream: true });
-                chatPanel.innerText += chunk;
+                paragraph.textContent += chunk;
 			}
 		}
 	</script>
